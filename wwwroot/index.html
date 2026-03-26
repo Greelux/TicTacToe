@@ -1,0 +1,156 @@
+﻿<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TicTacToe API Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        input, button, select {
+            padding: 8px;
+            margin: 5px 0;
+        }
+
+        .block {
+            border: 1px solid #ccc;
+            padding: 16px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .cell {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>TicTacToe Web API</h1>
+
+    <div class="block">
+        <h2>1. Створити гру</h2>
+        <button onclick="createGame()">Створити</button>
+        <pre id="createResult"></pre>
+    </div>
+
+    <div class="block">
+        <h2>2. Зробити хід</h2>
+        <label>Код гри:</label><br />
+        <input id="moveCode" placeholder="Наприклад A1B2C3D4" /><br />
+
+        <label>Гравець:</label><br />
+        <select id="player">
+            <option value="X">X</option>
+            <option value="O">O</option>
+        </select><br />
+
+        <label>Клітинка (0-8):</label><br />
+        <input id="cell" type="number" min="0" max="8" /><br />
+
+        <button onclick="makeMove()">Виконати хід</button>
+        <pre id="moveResult"></pre>
+    </div>
+
+    <div class="block">
+        <h2>3. Статус гри</h2>
+        <label>Код гри:</label><br />
+        <input id="statusCode" placeholder="Введіть код гри" /><br />
+        <button onclick="getStatus()">Отримати статус</button>
+        <div id="boardContainer" class="board"></div>
+        <pre id="statusResult"></pre>
+    </div>
+
+    <div class="block">
+        <h2>4. Історія ігор</h2>
+        <button onclick="getHistory()">Показати історію</button>
+        <pre id="historyResult"></pre>
+    </div>
+
+    <script>
+        function renderBoard(board) {
+            const container = document.getElementById("boardContainer");
+            container.innerHTML = "";
+
+            if (!board || board.length !== 9) return;
+
+            for (const ch of board) {
+                const div = document.createElement("div");
+                div.className = "cell";
+                div.textContent = ch === '-' ? '' : ch;
+                container.appendChild(div);
+            }
+        }
+
+        async function createGame() {
+            const res = await fetch('/api/games', { method: 'POST' });
+            const data = await res.json();
+            document.getElementById('createResult').textContent = JSON.stringify(data, null, 2);
+
+            document.getElementById('moveCode').value = data.code;
+            document.getElementById('statusCode').value = data.code;
+            renderBoard(data.board);
+        }
+
+        async function makeMove() {
+            const code = document.getElementById('moveCode').value;
+            const player = document.getElementById('player').value;
+            const cell = parseInt(document.getElementById('cell').value, 10);
+
+            const res = await fetch(`/api/games/${code}/move`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ player, cell })
+            });
+
+            const data = await res.json();
+            document.getElementById('moveResult').textContent = JSON.stringify(data, null, 2);
+
+            if (data.board) {
+                renderBoard(data.board);
+            }
+        }
+
+        async function getStatus() {
+            const code = document.getElementById('statusCode').value;
+            const res = await fetch(`/api/games/${code}`);
+            const data = await res.json();
+            document.getElementById('statusResult').textContent = JSON.stringify(data, null, 2);
+
+            if (data.board) {
+                renderBoard(data.board);
+            }
+        }
+
+        async function getHistory() {
+            const res = await fetch('/api/games/history');
+            const data = await res.json();
+            document.getElementById('historyResult').textContent = JSON.stringify(data, null, 2);
+        }
+    </script>
+</body>
+</html>
